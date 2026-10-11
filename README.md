@@ -1,19 +1,29 @@
-# Welcome to your Expo app 👋
+# TDAH Tasks
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Diario compartido en tiempo real para organizar el día con TDAH sin peleas.
+Cada nota puede llevar **texto + imagen + nota de voz**, agrupadas por día.
 
-## Get started
+Construido con [Expo](https://expo.dev) + [Expo Router](https://docs.expo.dev/router/introduction) y [Convex](https://convex.dev) como backend.
 
-1. Install dependencies
+## Empezar
+
+1. Instalar dependencias
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Arrancar la app
 
    ```bash
    npx expo start
+   ```
+
+3. Typecheck y lint
+
+   ```bash
+   npx tsc --noEmit
+   npx expo lint
    ```
 
 In the output, you'll find options to open the app in a
