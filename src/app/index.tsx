@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -25,6 +24,7 @@ import { TaskCard } from "../components/journal/TaskCard";
 import { ImageViewer } from "../components/journal/ImageViewer";
 import { useTheme, useThemedStyles, type Theme } from "../theme";
 import { readableDate, toISODate } from "../lib/date";
+import { confirmAction, notify } from "../lib/dialog";
 import type { TaskItem } from "../lib/types";
 
 // Altura del teclado en Android (edge-to-edge no redimensiona la ventana),
@@ -90,14 +90,24 @@ export default function JournalApp() {
 
   const handleUpload = async (uri: string, mime: string) => {
     const postUrl = await generateUploadUrl();
-    const body =
-      Platform.OS === "web"
-        ? await (await fetch(uri)).blob()
-        : new File(uri);
+
+    if (Platform.OS === "web") {
+      const blob = await (await fetch(uri)).blob();
+      const res = await fetch(postUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": blob.type || mime || "application/octet-stream",
+        },
+        body: blob,
+      });
+      const { storageId } = await res.json();
+      return storageId as string;
+    }
+
     const res = await expoFetch(postUrl, {
       method: "POST",
       headers: { "Content-Type": mime || "application/octet-stream" },
-      body,
+      body: new File(uri),
     });
     const { storageId } = await res.json();
     return storageId as string;
@@ -106,7 +116,7 @@ export default function JournalApp() {
   const handleAdd = async (payload: NewTaskPayload) => {
     const listId = response?.status === "ok" ? response.list._id : undefined;
     if (!listId) {
-      Alert.alert("Sala cerrada", "Vuelve a entrar en la sala para anotar.");
+      notify("Sala cerrada", "Vuelve a entrar en la sala para anotar.");
       return;
     }
     await addTodo({
@@ -143,6 +153,15 @@ export default function JournalApp() {
 
   const pendingCount =
     response?.status === "ok" ? response.items.filter((i) => !i.done).length : 0;
+
+  const handleDeleteItem = (id: string) => {
+    confirmAction({
+      title: "Eliminar nota",
+      message: "¿Seguro que quieres borrarla?",
+      confirmLabel: "Eliminar",
+      onConfirm: () => deleteTodo({ id: id as any }),
+    });
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -204,16 +223,7 @@ export default function JournalApp() {
               <TaskCard
                 item={item}
                 onToggle={(id) => toggleTodo({ id: id as any })}
-                onDelete={(id) =>
-                  Alert.alert("Eliminar nota", "¿Seguro que quieres borrarla?", [
-                    { text: "Cancelar", style: "cancel" },
-                    {
-                      text: "Eliminar",
-                      style: "destructive",
-                      onPress: () => deleteTodo({ id: id as any }),
-                    },
-                  ])
-                }
+                onDelete={handleDeleteItem}
                 onOpenImage={setViewerUri}
               />
             )}

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -25,6 +26,7 @@ import {
 } from "expo-audio";
 import * as ImagePicker from "expo-image-picker";
 import { haptics } from "../../lib/haptics";
+import { notify } from "../../lib/dialog";
 import { useTheme, useThemedStyles, type Theme } from "../../theme";
 import type { TaskAttachment, PendingAudio } from "../../lib/types";
 
@@ -85,7 +87,7 @@ export function TaskInput({ onAdd, upload, dateLabel }: Props) {
       if (fromCamera) {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
         if (!perm.granted) {
-          Alert.alert("Permiso denegado", "Se requiere acceso a la cámara.");
+          notify("Permiso denegado", "Se requiere acceso a la cámara.");
           return;
         }
       }
@@ -108,11 +110,15 @@ export function TaskInput({ onAdd, upload, dateLabel }: Props) {
         haptics.select();
       }
     } catch {
-      Alert.alert("Error", "No se pudo seleccionar la imagen.");
+      notify("Error", "No se pudo seleccionar la imagen.");
     }
   };
 
   const handleImagePress = () => {
+    if (Platform.OS === "web") {
+      pickImage(false);
+      return;
+    }
     Alert.alert("Añadir imagen", "¿De dónde quieres tomarla?", [
       { text: "Cámara", onPress: () => pickImage(true) },
       { text: "Galería", onPress: () => pickImage(false) },
@@ -131,7 +137,7 @@ export function TaskInput({ onAdd, upload, dateLabel }: Props) {
           haptics.select();
         }
       } catch {
-        Alert.alert("Error", "No se pudo guardar el audio.");
+        notify("Error", "No se pudo guardar el audio.");
       }
       return;
     }
@@ -139,7 +145,7 @@ export function TaskInput({ onAdd, upload, dateLabel }: Props) {
     try {
       const { granted } = await AudioModule.requestRecordingPermissionsAsync();
       if (!granted) {
-        Alert.alert("Permiso denegado", "Se requiere acceso al micrófono.");
+        notify("Permiso denegado", "Se requiere acceso al micrófono.");
         return;
       }
       await setAudioModeAsync({
@@ -150,7 +156,7 @@ export function TaskInput({ onAdd, upload, dateLabel }: Props) {
       audioRecorder.record();
       haptics.tap();
     } catch {
-      Alert.alert("Error", "No se pudo iniciar la grabación.");
+      notify("Error", "No se pudo iniciar la grabación.");
     }
   };
 
@@ -174,7 +180,7 @@ export function TaskInput({ onAdd, upload, dateLabel }: Props) {
       haptics.success();
     } catch {
       haptics.error();
-      Alert.alert("Error", "No se pudo guardar la nota. Inténtalo de nuevo.");
+      notify("Error", "No se pudo guardar la nota. Inténtalo de nuevo.");
     } finally {
       setIsSending(false);
     }
